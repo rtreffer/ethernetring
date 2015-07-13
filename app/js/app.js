@@ -1,5 +1,6 @@
 window['ering'] = {};
 window.ering.canvas = {};
+window.ering.adjcanvas = {};
 window.ering.dom = {};
 
 function updateVars() {
@@ -30,9 +31,13 @@ function updateVars() {
   if (window.ering.downlinks <= 0 || isNaN(window.ering.downlinks)) {
     window.ering.downlinks = 2;
   }
-  window.ering.canvas.dom = $('#content');
+  window.ering.canvas.dom = $('#ring');
   window.ering.canvas.size = window.ering.canvas.dom.width();
-  window.ering.canvas.d3 = d3.select('#content');
+  window.ering.canvas.d3 = d3.select('#ring');
+
+  window.ering.adjcanvas.dom = $('#adj');
+  window.ering.adjcanvas.size = window.ering.adjcanvas.dom.width();
+  window.ering.adjcanvas.d3 = d3.select('#adj');
 
   window.ering.dom.txtswitches.text(window.ering.switches + " switch(es)");
   window.ering.dom.txtswitchports.text(window.ering.switchports + " port(s)");
@@ -291,9 +296,115 @@ function renderGraph() {
     .attr('stroke', computeColor);
 }
 
+function renderAdjGraph() {
+  var width = window.ering.adjcanvas.size;
+  var height = width / 6;
+  var textMargin = 20;
+  var radPerNode = (Math.PI * 2) / window.ering.switches;
+  window.ering.adjcanvas.d3.selectAll("*").remove();
+  var svg = window.ering.adjcanvas.d3.append("g");
+
+  var computeColor = function(d) {
+      var src = d.src;
+      var dst = d.dst;
+      var hue = d.src + Math.min(dst - src,src + window.ering.switches - dst) / 2.0;
+      if (hue > window.ering.switches) {
+        hue = (hue - window.ering.switches) / window.ering.switches;
+      } else {
+        hue = hue / window.ering.switches;
+      }
+      var saturation = 0.25 + (2.0 + Math.min(Math.cos(src * radPerNode), Math.sin(dst * radPerNode))) / 4;
+      var value = 0.5 + (2.0 + Math.min(Math.sin(src * radPerNode), Math.cos(dst * radPerNode))) / 6;
+
+      var rgb = hsv2rgb(hue,saturation,value);
+
+      return d3.rgb(rgb.r,rgb.g,rgb.b);
+  };
+
+  var nodes = [];
+  var links = [];
+  for (var i = window.ering.expDinstances.length - 1; i >= 0; i--) {
+    var id = window.ering.switches - window.ering.expDinstances[i];
+    var index = nodes.length;
+    nodes.push({
+      key: '' + id,
+      index: index,
+      id: id
+    });
+    links.push({
+      src: 0,
+      dst: id,
+      srcindex: window.ering.expDinstances.length,
+      dstindex: index
+    });
+  }
+  var index = nodes.length;
+  nodes.push({
+    key: '0',
+    index: index,
+    id: 0
+  });
+  for (var i = 0; i < window.ering.expDinstances.length; i++) {
+    var id = window.ering.expDinstances[i];
+    var index = nodes.length;
+    nodes.push({
+      key: '' + id,
+      index: index,
+      id: id
+    });
+    links.push({
+      src: 0,
+      dst: id,
+      srcindex: window.ering.expDinstances.length,
+      dstindex: index
+    });
+  }
+
+  var node_distance = (1.0 * width) / nodes.length;
+
+  var node = svg.append("g").selectAll(".adjnode");
+  node = node.data(nodes)
+    .enter().append("text")
+    .attr("class", "adjnode")
+    .attr("dy", ".31em")
+    .attr("text-anchor", "middle")
+    .attr("transform", function(d) { return "translate(" + (0.5 * node_distance + node_distance * d.index) + "," + (height - 10) + ")"; })
+    .text(function(d) { return d.key;});
+  var link = svg.append("g").selectAll(".adjlink");
+  link = link.data(links)
+    .enter().append("path")
+    .attr('stroke', computeColor)
+    .attr("d", function(d) {
+      var srcx = d.srcindex * node_distance + 0.5 * node_distance;
+      var dstx = d.dstindex * node_distance + 0.5 * node_distance;
+      var left = Math.min(srcx,dstx);
+      var right = Math.max(srcx,dstx);
+      var tension = (Math.min(d.dst - d.src,d.src + window.ering.switches - d.dst) - 1) * 2.0 / (window.ering.switches);
+      tension = Math.pow(0.001 + tension, 0.5);
+      var line = d3.svg.line().interpolate("bundle").x(function(d) { return d.x; }).y(function(d) { return d.y; });
+      line = line.tension(tension);
+      if (d.srcindex > d.dstindex) {
+        return line([
+          {x:left,y:height-textMargin},
+          {x:(left * 4 + right) / 5,y:0},
+          {x:(left + right * 19) / 20,y:0},
+          {x:right,y:height-textMargin}
+        ]);
+      } else {
+        return line([
+          {x:left,y:height-textMargin},
+          {x:(left * 19 + right) / 20,y:0},
+          {x:(left + right * 4) / 5,y:0},
+          {x:right,y:height-textMargin}
+        ]);
+      }
+    });
+}
+
 function render() {
   updateVars();
   computeVars();
+  renderAdjGraph();
   renderGraph();
 }
 

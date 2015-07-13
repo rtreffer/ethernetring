@@ -50,19 +50,66 @@
   </div>
 
   <div class="container">
+    <div style="position: relative; width: 100%; height: 0; padding-bottom: 16.66666%;">
+    <div style="position:absolute;top:0;left:0;bottom:0;right:0">
+    <svg
+      width="100%"
+      height="100%"
+      id="adj"
+      xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    </div>
+  </div>
+
+  <div class="container">
     <div style="position: relative; width: 100%; height: 0; padding-bottom: 100%;">
     <div style="position:absolute;top:0;left:0;bottom:0;right:0">
     <svg 
       width="100%"
       height="100%"
-      id="content"
+      id="ring"
       xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
     </div>
   </div>
-  
+
+  <div class="container">
+    <h1>The math</h1>
+    <hr />
+    <h2>Variables</h2>
+    <p>
+    Given
+    <ul>
+      <li>\(N\): number of switches (where \(N \equiv 0 \; mod \; 2\))</li>
+      <li>\(S\): number of switchports</li>
+      <li>\(D\): number of servers (downstream)</li>
+      <li>\(L\): number of links per server</li>
+    </ul>
+    we can compute
+    <ul>
+      <li>\(S_r\): number of ring switchports \( \left \lfloor \frac{N \cdot S - D \cdot L}{N} \right \rfloor \)</li>
+    </ul>
+    <em>This may leave some ports empty as we round towards 0.</em>
+    </p>
+    <h2>The ring function</h2>
+    <p>
+    We look for a base \(p\) such that \(\left \lfloor \left \lceil \frac{S_r}{2} \right \rceil \cdot p^{\left \lceil 0.5 \cdot S_r \right \rceil - 1} \right \rfloor = \frac{N}{2} \).
+    Given a switchport \(s\) and a base \(p\) the distance to the target switch can be computed as
+    \( s \cdot p^{s - 1} \), where the last forward
+    switchport \(\left \lceil \frac{S_r}{2} \right \rceil \) will point to the opposite switch \( \frac{N}{2} \).<br />
+    <em>If \(S_r\) is odd then we'll have one link from our switch to the opposite switch and one back whereas
+    all other ports are split between outgoing and incoming links. If \(S_r\) is even we'll end up with one
+    free port on every switch. This is represented by the ceiling of \( \frac{S_r}{2} \).</em>
+    </p>
+    <p>
+    The outer floor sign can be removed by regarding each switch as an interval, such
+    that switch \(n\) represents \( [n,n+1) \).
+    <h2>Average Adjacency and the ring speed</h2>
+    <p>
+    </p>
   </div>
 
   <script src="js/app.js" type="text/javascript"></script>
+  <script type="text/javascript" src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 </body>
 </html>
